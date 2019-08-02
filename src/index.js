@@ -1,3 +1,5 @@
+import 'babel-core/register';
+import 'babel-polyfill';
 import * as utils from './utils.js';
 import cookie from './browserLookups/cookie.js';
 import querystring from './browserLookups/querystring.js';
