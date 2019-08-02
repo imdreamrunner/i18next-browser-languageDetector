@@ -26,6 +26,7 @@ class Browser {
   constructor(services, options = {}) {
     this.type = 'languageDetector';
     this.detectors = {};
+    this.async = true;
 
     this.init(services, options);
   }
@@ -52,38 +53,44 @@ class Browser {
     this.detectors[detector.name] = detector;
   }
 
-  detect(detectionOrder) {
-    if (!detectionOrder) detectionOrder = this.options.order;
-
-    let detected = [];
-    detectionOrder.forEach(detectorName => {
-      if (this.detectors[detectorName]) {
-        let lookup = this.detectors[detectorName].lookup(this.options);
-        if (lookup && typeof lookup === 'string') lookup = [lookup];
-        if (lookup) detected = detected.concat(lookup);
+  detect(callback) {
+    const detectionOrder = this.options.order;
+    const promise = new Promise(async resolve => {
+      let detected = [];
+      for (let detectorName of detectionOrder) {
+        if (this.detectors[detectorName]) {
+          let lookup;
+          if (this.detectors[detectorName].async) {
+            lookup = await this.detectors[detectorName].lookup(this.options);
+          } else {
+            lookup = this.detectors[detectorName].lookup(this.options);
+          }
+          if (lookup && typeof lookup === 'string') lookup = [lookup];
+          if (lookup) detected = detected.concat(lookup);
+        }
       }
+  
+      let found;
+      detected.forEach(lng => {
+        if (found) return;
+        let cleanedLng = this.services.languageUtils.formatLanguageCode(lng);
+        if (this.services.languageUtils.isWhitelisted(cleanedLng)) found = cleanedLng;
+      });
+  
+      if (!found) {
+        let fallbacks = this.i18nOptions.fallbackLng;
+        if (typeof fallbacks === 'string') fallbacks = [fallbacks];
+        if (!fallbacks) fallbacks = [];
+  
+        if (Object.prototype.toString.apply(fallbacks) === '[object Array]') {
+          found = fallbacks[0];
+        } else {
+          found = fallbacks[0] || fallbacks.default && fallbacks.default[0];
+        }
+      };
+      resolve(found);
     });
-
-    let found;
-    detected.forEach(lng => {
-      if (found) return;
-      let cleanedLng = this.services.languageUtils.formatLanguageCode(lng);
-      if (this.services.languageUtils.isWhitelisted(cleanedLng)) found = cleanedLng;
-    });
-
-    if (!found) {
-      let fallbacks = this.i18nOptions.fallbackLng;
-      if (typeof fallbacks === 'string') fallbacks = [fallbacks];
-      if (!fallbacks) fallbacks = [];
-
-      if (Object.prototype.toString.apply(fallbacks) === '[object Array]') {
-        found = fallbacks[0];
-      } else {
-        found = fallbacks[0] || fallbacks.default && fallbacks.default[0];
-      }
-    };
-
-    return found;
+    promise.then(found => callback(found));
   }
 
   cacheUserLanguage(lng, caches) {

@@ -205,6 +205,8 @@
 
   var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+  function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
   function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
   function getDefaults() {
@@ -230,6 +232,7 @@
 
       this.type = 'languageDetector';
       this.detectors = {};
+      this.async = true;
 
       this.init(services, options);
     }
@@ -263,40 +266,137 @@
       }
     }, {
       key: 'detect',
-      value: function detect(detectionOrder) {
+      value: function detect(callback) {
         var _this = this;
 
-        if (!detectionOrder) detectionOrder = this.options.order;
+        var detectionOrder = this.options.order;
+        var promise = new Promise(function () {
+          var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(resolve) {
+            var detected, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, detectorName, lookup, found, fallbacks;
 
-        var detected = [];
-        detectionOrder.forEach(function (detectorName) {
-          if (_this.detectors[detectorName]) {
-            var lookup = _this.detectors[detectorName].lookup(_this.options);
-            if (lookup && typeof lookup === 'string') lookup = [lookup];
-            if (lookup) detected = detected.concat(lookup);
-          }
+            return regeneratorRuntime.wrap(function _callee$(_context) {
+              while (1) {
+                switch (_context.prev = _context.next) {
+                  case 0:
+                    detected = [];
+                    _iteratorNormalCompletion = true;
+                    _didIteratorError = false;
+                    _iteratorError = undefined;
+                    _context.prev = 4;
+                    _iterator = detectionOrder[Symbol.iterator]();
+
+                  case 6:
+                    if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
+                      _context.next = 22;
+                      break;
+                    }
+
+                    detectorName = _step.value;
+
+                    if (!_this.detectors[detectorName]) {
+                      _context.next = 19;
+                      break;
+                    }
+
+                    lookup = void 0;
+
+                    if (!_this.detectors[detectorName].async) {
+                      _context.next = 16;
+                      break;
+                    }
+
+                    _context.next = 13;
+                    return _this.detectors[detectorName].lookup(_this.options);
+
+                  case 13:
+                    lookup = _context.sent;
+                    _context.next = 17;
+                    break;
+
+                  case 16:
+                    lookup = _this.detectors[detectorName].lookup(_this.options);
+
+                  case 17:
+                    if (lookup && typeof lookup === 'string') lookup = [lookup];
+                    if (lookup) detected = detected.concat(lookup);
+
+                  case 19:
+                    _iteratorNormalCompletion = true;
+                    _context.next = 6;
+                    break;
+
+                  case 22:
+                    _context.next = 28;
+                    break;
+
+                  case 24:
+                    _context.prev = 24;
+                    _context.t0 = _context['catch'](4);
+                    _didIteratorError = true;
+                    _iteratorError = _context.t0;
+
+                  case 28:
+                    _context.prev = 28;
+                    _context.prev = 29;
+
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                      _iterator.return();
+                    }
+
+                  case 31:
+                    _context.prev = 31;
+
+                    if (!_didIteratorError) {
+                      _context.next = 34;
+                      break;
+                    }
+
+                    throw _iteratorError;
+
+                  case 34:
+                    return _context.finish(31);
+
+                  case 35:
+                    return _context.finish(28);
+
+                  case 36:
+                    found = void 0;
+
+                    detected.forEach(function (lng) {
+                      if (found) return;
+                      var cleanedLng = _this.services.languageUtils.formatLanguageCode(lng);
+                      if (_this.services.languageUtils.isWhitelisted(cleanedLng)) found = cleanedLng;
+                    });
+
+                    if (!found) {
+                      fallbacks = _this.i18nOptions.fallbackLng;
+
+                      if (typeof fallbacks === 'string') fallbacks = [fallbacks];
+                      if (!fallbacks) fallbacks = [];
+
+                      if (Object.prototype.toString.apply(fallbacks) === '[object Array]') {
+                        found = fallbacks[0];
+                      } else {
+                        found = fallbacks[0] || fallbacks.default && fallbacks.default[0];
+                      }
+                    };
+                    resolve(found);
+
+                  case 41:
+                  case 'end':
+                    return _context.stop();
+                }
+              }
+            }, _callee, _this, [[4, 24, 28, 36], [29,, 31, 35]]);
+          }));
+
+          return function (_x4) {
+            return _ref.apply(this, arguments);
+          };
+        }());
+        promise.then(function (found) {
+          return callback(found);
         });
-
-        var found = void 0;
-        detected.forEach(function (lng) {
-          if (found) return;
-          var cleanedLng = _this.services.languageUtils.formatLanguageCode(lng);
-          if (_this.services.languageUtils.isWhitelisted(cleanedLng)) found = cleanedLng;
-        });
-
-        if (!found) {
-          var fallbacks = this.i18nOptions.fallbackLng;
-          if (typeof fallbacks === 'string') fallbacks = [fallbacks];
-          if (!fallbacks) fallbacks = [];
-
-          if (Object.prototype.toString.apply(fallbacks) === '[object Array]') {
-            found = fallbacks[0];
-          } else {
-            found = fallbacks[0] || fallbacks.default && fallbacks.default[0];
-          }
-        };
-
-        return found;
       }
     }, {
       key: 'cacheUserLanguage',
