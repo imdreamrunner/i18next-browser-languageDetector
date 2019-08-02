@@ -52,17 +52,22 @@ class Browser {
     this.detectors[detector.name] = detector;
   }
 
-  detect(detectionOrder) {
+  async detect(detectionOrder) {
     if (!detectionOrder) detectionOrder = this.options.order;
 
     let detected = [];
-    detectionOrder.forEach(detectorName => {
+    for (let detectorName of detectionOrder) {
       if (this.detectors[detectorName]) {
-        let lookup = this.detectors[detectorName].lookup(this.options);
+        let lookup;
+        if (this.detectors[detectorName].async) {
+          lookup = await this.detectors[detectorName].lookup(this.options);
+        } else {
+          lookup = this.detectors[detectorName].lookup(this.options);
+        }
         if (lookup && typeof lookup === 'string') lookup = [lookup];
         if (lookup) detected = detected.concat(lookup);
       }
-    });
+    }
 
     let found;
     detected.forEach(lng => {
