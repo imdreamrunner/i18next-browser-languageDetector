@@ -55,6 +55,6 @@
   "author": "Jan Mühlemann <jan.muehlemann@gmail.com> (https://github.com/jamuhl)",
   "license": "MIT",
   "publishConfig": {
-      "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/"
   }
 }
